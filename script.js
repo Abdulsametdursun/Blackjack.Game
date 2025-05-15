@@ -3,10 +3,6 @@ const player = document.querySelector('.player');
 const dealer = document.querySelector('.dealer');
 const score0El = document.getElementById('score--0');
 const score1El = document.getElementById('score--1');
-const current1El = document.getElementById('current--1');
-const current2El = document.getElementById('current--2');
-const current3El = document.getElementById('current--3');
-const current4El = document.getElementById('current--4');
 const midCardEl = document.querySelector('.midCard');
 const btnNew = document.querySelector('.btn--new');
 const btnGet = document.querySelector('.btn--get');
@@ -15,9 +11,35 @@ const btnStart = document.querySelector('.btn--start');
 const messageEl = document.getElementById('message');
 
 let scores, currentScore, activePlayer, totalCards, playing;
+let current1El, current2El, current3El, current4El;
+
+function addCardToHand(imageSrc, playerElement) {
+  const newCard = document.createElement('img');
+  newCard.src = imageSrc;
+  newCard.style.width = '60px';
+  newCard.style.margin = '5px';
+  playerElement.appendChild(newCard);
+}
 
 //* Starting Conditions Function
 const init = function () {
+  document.querySelector('.player .current').innerHTML = `
+  <p class="current-label">ON HAND</p>
+  <img src="0.png" alt="Playing card" class="card" id="current--1" />
+  <img src="0.png" alt="Playing card" class="card" id="current--2" />
+`;
+
+  document.querySelector('.dealer .current').innerHTML = `
+  <p class="current-label">ON HAND</p>
+  <img src="0.png" alt="Playing card" class="card" id="current--3" />
+  <img src="0.png" alt="Playing card" class="card" id="current--4" />
+`;
+
+  current1El = document.getElementById('current--1');
+  current2El = document.getElementById('current--2');
+  current3El = document.getElementById('current--3');
+  current4El = document.getElementById('current--4');
+
   scores = [0, 0];
   totalCards = 0;
   currentScore = 0;
@@ -39,6 +61,8 @@ const init = function () {
   player.classList.remove('player--winner', 'player--looser', 'player--active');
   dealer.classList.remove('player--winner', 'player--looser', 'player--active');
   player.classList.add('player--active'); // Player starts first
+
+  btnGet.disabled = true;
 };
 init();
 
@@ -73,49 +97,44 @@ btnStart.addEventListener('click', function () {
       player.classList.add('player--looser');
       player.classList.remove('player--active');
     }
+    btnGet.disabled = false;
   }
 });
+
+const playerHand = document.querySelector('.player .current');
+const dealerHand = document.querySelector('.dealer .current');
 
 //* Generate a random card number when Player gets a new card
 btnGet.addEventListener('click', function () {
   if (playing) {
-    // Get a random card value
     const getCard = Math.floor(Math.random() * 13) + 1;
     midCardEl.classList.remove('hidden');
     midCardEl.src = `${getCard}.png`;
 
-    // Add the value of the new card to the current active player's score
+    if (activePlayer === 0) {
+      addCardToHand(midCardEl.src, playerHand);
+    } else {
+      addCardToHand(midCardEl.src, dealerHand);
+    }
+
     currentScore += getCard;
     scores[activePlayer] = currentScore;
 
-    // Check if the current score is exactly 21 for the active player
     if (scores[activePlayer] === 21) {
       messageEl.textContent = `${activePlayer === 0 ? 'You' : 'Dealer'} Win!`;
       messageEl.classList.remove('hidden');
-      if (activePlayer === 0) {
-        player.classList.add('player--winner');
-      } else {
-        dealer.classList.add('player--winner');
-      }
-      playing = false; // Stop the game
-    }
-    // Check if the current score exceeds 21
-    else if (scores[activePlayer] > 21) {
+      if (activePlayer === 0) player.classList.add('player--winner');
+      else dealer.classList.add('player--winner');
+      playing = false;
+    } else if (scores[activePlayer] > 21) {
       messageEl.textContent = `${activePlayer === 0 ? 'You' : 'Dealer'} Lose!`;
       messageEl.classList.remove('hidden');
-      if (activePlayer === 0) {
-        player.classList.add('player--looser');
-      } else {
-        dealer.classList.add('player--looser');
-      }
-      playing = false; // Stop the game
+      if (activePlayer === 0) player.classList.add('player--looser');
+      else dealer.classList.add('player--looser');
+      playing = false;
     } else {
-      // Update the total score for the active player (either player or dealer)
-      if (activePlayer === 0) {
-        score0El.textContent = scores[0];
-      } else {
-        score1El.textContent = scores[1];
-      }
+      if (activePlayer === 0) score0El.textContent = scores[0];
+      else score1El.textContent = scores[1];
     }
   }
 });
@@ -137,6 +156,8 @@ btnHold.addEventListener('click', function () {
       currentScore = card3 + card4;
       scores[1] = currentScore;
       score1El.textContent = scores[1];
+
+      dealerPlay();
 
       // Check if dealer hits 21 and wins immediately
       if (scores[1] === 21) {
@@ -179,7 +200,36 @@ btnHold.addEventListener('click', function () {
   }
 });
 
-//* Switch player function
+//* Dealer automatic play function
+const dealerPlay = function () {
+  while (scores[1] < 17) {
+    const newCard = Math.floor(Math.random() * 13) + 1;
+    currentScore += newCard;
+    scores[1] = currentScore;
+    score1El.textContent = scores[1];
+
+    addCardToHand(`${newCard}.png`, dealerHand);
+  }
+
+  // Determine winner
+  if (scores[1] > 21) {
+    messageEl.textContent = 'Player Wins!';
+    dealer.classList.add('player--looser');
+  } else if (scores[1] > scores[0]) {
+    messageEl.textContent = 'Dealer Wins!';
+    dealer.classList.add('player--winner');
+  } else if (scores[0] > scores[1]) {
+    messageEl.textContent = 'Player Wins!';
+    player.classList.add('player--winner');
+  } else {
+    messageEl.textContent = "It's a tie!";
+  }
+
+  dealer.classList.remove('player--active');
+  messageEl.classList.remove('hidden');
+  playing = false;
+};
+
 const switchPlayer = function () {
   currentScore = 0; // Reset the current score for the new active player
   activePlayer = activePlayer === 0 ? 1 : 0; // Toggle between player and dealer
@@ -188,3 +238,16 @@ const switchPlayer = function () {
 };
 
 btnNew.addEventListener('click', init);
+
+document.addEventListener('DOMContentLoaded', function () {
+  const modal = document.getElementById('howToPlayModal');
+  const closeBtn = document.getElementById('closeModalBtn');
+
+  // Show popup when page loads
+  modal.style.display = 'flex';
+
+  // Close popup
+  closeBtn.addEventListener('click', function () {
+    modal.style.display = 'none';
+  });
+});

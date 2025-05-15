@@ -10,7 +10,7 @@
   <body>
     <main>
       <section class="player player--active">
-        <h2 class="name" id="name--0">Player</h2>
+        <h2 class="name" id="name--0">Player 1</h2>
         <p class="PlayerScore" id="score--0">0</p>
         <div class="current">
           <p class="current-label">On Hand</p>
@@ -30,10 +30,29 @@
       <p id="message" class="hidden"></p>
       <img src="0.png" alt="Playing card" class="midCard" id="newCard" />
       <button class="btn btn--start">♠️ Start game</button>
-      <button class="btn btn--new">🔄 New game</button>
+      <button class="btn btn--new">🔄 Reset The Cards</button>
       <button class="btn btn--get">🃏 Get Card</button>
       <button class="btn btn--hold">📥 Hold</button>
     </main>
+    <!-- Pop-up -->
+    <div id="howToPlayModal" class="popup-modal">
+      <div class="popup-backdrop">
+        <div class="popup-content">
+          <h2>How to Play Blackjack</h2>
+          <p>
+            The goal of Blackjack is to beat the dealer's hand without going
+            over 21.<br /><br />
+            - Each player is dealt two cards.<br />
+            - 'Hit' to take another card.<br />
+            - 'Stand' to keep your total and end your turn.<br />
+            - Face cards are worth 10, Aces are 1 or 11.<br />
+            - Dealer must draw to 16 and stand on 17.<br />
+            - Best hand wins. Good luck!
+          </p>
+          <button id="closeModalBtn">Got it!</button>
+        </div>
+      </div>
+    </div>
     <script src="script.js"></script>
   </body>
 </html>
