@@ -1,4 +1,5 @@
 //* Selecting Elements
+//* Get references to all necessary UI elements
 const player = document.querySelector('.player');
 const dealer = document.querySelector('.dealer');
 const score0El = document.getElementById('score--0');
@@ -13,6 +14,28 @@ const messageEl = document.getElementById('message');
 let scores, currentScore, activePlayer, totalCards, playing;
 let current1El, current2El, current3El, current4El;
 
+//* Cheat Mode Toggle and Card Biasing
+//* Enable cheat mode (toggleable with 'C' key)
+let cheatMode = true;
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'c') {
+    cheatMode = !cheatMode;
+    console.log(`Cheat mode is now ${cheatMode ? 'ON' : 'OFF'}`);
+  }
+});
+
+//* Custom card draw function with dealer cheat bias
+//* Function to draw a random card, biased if cheat mode is on and it's the dealer
+function getRandomCard() {
+  const allCards = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
+  const lowCards = [2, 3, 4, 5];
+  if (cheatMode && activePlayer === 1 && Math.random() < 0.4) {
+    return lowCards[Math.floor(Math.random() * lowCards.length)];
+  }
+  return allCards[Math.floor(Math.random() * allCards.length)];
+}
+
+//* Function to visually add a card image to the hand display
 function addCardToHand(imageSrc, playerElement) {
   const newCard = document.createElement('img');
   newCard.src = imageSrc;
@@ -22,6 +45,7 @@ function addCardToHand(imageSrc, playerElement) {
 }
 
 //* Starting Conditions Function
+//* Reset the game to initial state (new game)
 const init = function () {
   document.querySelector('.player .current').innerHTML = `
   <p class="current-label">ON HAND</p>
@@ -60,27 +84,26 @@ const init = function () {
 
   player.classList.remove('player--winner', 'player--looser', 'player--active');
   dealer.classList.remove('player--winner', 'player--looser', 'player--active');
-  player.classList.add('player--active'); // Player starts first
+  player.classList.add('player--active');
 
   btnGet.disabled = true;
+  btnHold.disabled = true;
 };
 init();
 
 //* Generate 2 random numbers and show cards for both Player and Dealer
+//* Handle start button click: deal 2 cards to player
 btnStart.addEventListener('click', function () {
   if (playing) {
-    // Generate two random numbers for Player
-    const card1 = Math.floor(Math.random() * 13) + 1;
-    const card2 = Math.floor(Math.random() * 13) + 1;
+    const card1 = getRandomCard();
+    const card2 = getRandomCard();
     current1El.src = `${card1}.png`;
     current2El.src = `${card2}.png`;
 
-    // Calculate player's initial total score and set it to currentScore
     currentScore = card1 + card2;
     scores[0] = currentScore;
     score0El.textContent = scores[0];
 
-    // Check if player hits 21 and wins immediately
     if (scores[0] === 21) {
       playing = false;
       messageEl.textContent = 'You Win!';
@@ -89,7 +112,6 @@ btnStart.addEventListener('click', function () {
       player.classList.remove('player--active');
     }
 
-    // Check if player loses immediately (score > 21)
     if (scores[0] > 21) {
       playing = false;
       messageEl.textContent = 'You Lose!';
@@ -98,16 +120,17 @@ btnStart.addEventListener('click', function () {
       player.classList.remove('player--active');
     }
     btnGet.disabled = false;
+    btnHold.disabled = false;
   }
 });
 
 const playerHand = document.querySelector('.player .current');
 const dealerHand = document.querySelector('.dealer .current');
 
-//* Generate a random card number when Player gets a new card
+//* Handle Get Card button: add one card to current player
 btnGet.addEventListener('click', function () {
   if (playing) {
-    const getCard = Math.floor(Math.random() * 13) + 1;
+    const getCard = getRandomCard();
     midCardEl.classList.remove('hidden');
     midCardEl.src = `${getCard}.png`;
 
@@ -139,27 +162,22 @@ btnGet.addEventListener('click', function () {
   }
 });
 
+//* Handle Hold button: switch to dealer and evaluate outcome
 btnHold.addEventListener('click', function () {
   if (playing) {
-    // If it's the player's turn
     if (activePlayer === 0) {
-      // Switch to dealer's turn
       switchPlayer();
-
-      // Generate two random numbers for Dealer
-      const card3 = Math.floor(Math.random() * 13) + 1;
-      const card4 = Math.floor(Math.random() * 13) + 1;
+      const card3 = getRandomCard();
+      const card4 = getRandomCard();
       current3El.src = `${card3}.png`;
       current4El.src = `${card4}.png`;
 
-      // Calculate dealer's initial total score and show it
       currentScore = card3 + card4;
       scores[1] = currentScore;
       score1El.textContent = scores[1];
 
       dealerPlay();
 
-      // Check if dealer hits 21 and wins immediately
       if (scores[1] === 21) {
         playing = false;
         messageEl.textContent = 'Dealer Wins!';
@@ -168,7 +186,6 @@ btnHold.addEventListener('click', function () {
         dealer.classList.remove('player--active');
       }
 
-      // Check if dealer loses immediately (score > 21)
       if (scores[1] > 21) {
         playing = false;
         messageEl.textContent = 'Player Wins!';
@@ -176,10 +193,7 @@ btnHold.addEventListener('click', function () {
         dealer.classList.add('player--looser');
         dealer.classList.remove('player--active');
       }
-    }
-    // If it's the dealer's turn and btnHold is clicked again
-    else if (activePlayer === 1) {
-      // Compare scores and declare winner based on who has more points
+    } else if (activePlayer === 1) {
       if (scores[1] > scores[0]) {
         messageEl.textContent = 'Dealer Wins!';
         messageEl.classList.remove('hidden');
@@ -191,19 +205,18 @@ btnHold.addEventListener('click', function () {
         player.classList.add('player--winner');
         dealer.classList.remove('player--active');
       } else {
-        // In case of a tie
         messageEl.textContent = "It's a tie!";
         messageEl.classList.remove('hidden');
       }
-      playing = false; // End the game
+      playing = false;
     }
   }
 });
 
-//* Dealer automatic play function
+//* Dealer's automatic logic for hitting until reaching 17
 const dealerPlay = function () {
   while (scores[1] < 17) {
-    const newCard = Math.floor(Math.random() * 13) + 1;
+    const newCard = getRandomCard();
     currentScore += newCard;
     scores[1] = currentScore;
     score1El.textContent = scores[1];
@@ -211,7 +224,6 @@ const dealerPlay = function () {
     addCardToHand(`${newCard}.png`, dealerHand);
   }
 
-  // Determine winner
   if (scores[1] > 21) {
     messageEl.textContent = 'Player Wins!';
     dealer.classList.add('player--looser');
@@ -230,23 +242,22 @@ const dealerPlay = function () {
   playing = false;
 };
 
+//* Switch the active player (player ↔ dealer)
 const switchPlayer = function () {
-  currentScore = 0; // Reset the current score for the new active player
-  activePlayer = activePlayer === 0 ? 1 : 0; // Toggle between player and dealer
+  currentScore = 0;
+  activePlayer = activePlayer === 0 ? 1 : 0;
   player.classList.toggle('player--active');
   dealer.classList.toggle('player--active');
 };
 
+//* Handle New Game button click: call init()
 btnNew.addEventListener('click', init);
 
+//* Show popup modal with 'how to play' instructions when page loads
 document.addEventListener('DOMContentLoaded', function () {
   const modal = document.getElementById('howToPlayModal');
   const closeBtn = document.getElementById('closeModalBtn');
-
-  // Show popup when page loads
   modal.style.display = 'flex';
-
-  // Close popup
   closeBtn.addEventListener('click', function () {
     modal.style.display = 'none';
   });

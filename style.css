@@ -254,3 +254,8 @@ main {
 #closeModalBtn:hover {
   background-color: #45a049;
 }
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
